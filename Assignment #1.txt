@@ -1,0 +1,122 @@
+-------------Assignment #1 Creating the databases
+-------------------------------------------------
+
+USE [master]
+GO
+
+--------------------- Creating the first database
+--------------------- Item_Catalogue
+
+if exists (SELECT name FROM master.sys.databases where name=N'Item_Catalogue') drop database [Item_Catalogue];
+
+CREATE DATABASE [Item_Catalogue];
+
+GO
+USE [Item_Catalogue];
+GO
+-- CREATE #1 table IC_CATEGORY in the database
+
+IF OBJECT_ID(N'dbo.IC_CATEGORY', N'U') IS NOT NULL drop table dbo.[IC_CATEGORY];
+GO
+
+CREATE TABLE dbo.[IC_CATEGORY](
+	CATEGORY_ID int NOT NULL,
+	CATEGORY_NAME varchar (100) NOT NULL, 
+	CATEGORY_DESC varchar (1000) NULL, 
+
+    CONSTRAINT [PK_IC_CATEGORY_ITEM_ID] PRIMARY KEY (CATEGORY_ID),
+	CONSTRAINT [UC_IC_CATEGORY_ITEM_NAME] UNIQUE (CATEGORY_NAME)
+	);
+
+-- CREATE #2 table IC_BRAND 
+
+IF OBJECT_ID(N'dbo.IC_BRAND', N'U') IS NOT NULL drop table dbo.[IC_BRAND];
+GO
+
+CREATE TABLE dbo.[IC_BRAND](
+BRAND_ID int NOT NULL,
+BRAND_NAME varchar (100) NOT NULL, 
+BRAND_DESC varchar (1000) NULL, 
+
+CONSTRAINT [PK_IC_BRAND_ITEM_ID] PRIMARY KEY (BRAND_ID),
+CONSTRAINT [UC_IC_BRAND_ITEM_NAME] UNIQUE (BRAND_NAME)
+);
+
+-- CREATE #3 table IC_ITEM
+
+IF OBJECT_ID(N'dbo.IC_ITEM', N'U') IS NOT NULL drop table dbo.[IC_ITEM];
+GO
+
+CREATE TABLE dbo.[IC_ITEM](
+ITEM_ID int NOT NULL,
+ITEM_NAME varchar (100) NOT NULL, 
+ITEM_DESCRIPTION varchar (1000) NULL, 
+
+BRAND_ID int NOT NULL,
+CATEGORY_ID int NOT NULL, 
+
+CONSTRAINT [PK_IC_ITEM_ITEM_ID] PRIMARY KEY (ITEM_ID),
+CONSTRAINT [UC_IC_ITEM_ITEM_NAME] UNIQUE (ITEM_NAME)
+);
+
+
+
+--------------------- Creating the second database
+--------------------- Pricing_Application
+USE [master]
+GO
+
+if exists (SELECT name FROM master.sys.databases where name=N'Pricing_Application') drop database [Pricing_Application];
+
+CREATE DATABASE [Pricing_Application];
+
+GO
+USE [Pricing_Application];
+
+-- CREATE #1 table PR_PRICE
+
+IF OBJECT_ID(N'dbo.PR_PRICE', N'U') IS NOT NULL drop table dbo.[PR_PRICE];
+GO
+
+CREATE TABLE dbo.[PR_PRICE](
+ITEM_ID int NOT NULL,
+PRICE_DATE date NOT NULL, 
+PRICE_VALUE float NOT NULL, 
+
+CONSTRAINT [PK_PR_PRICE_ITEM_ID_PRICE_DATE] PRIMARY KEY (ITEM_ID,PRICE_DATE)
+);
+
+
+--------------------- Creating the third database
+--------------------- Promotion_Application
+USE [master]
+GO
+
+if exists (SELECT name FROM master.sys.databases where name=N'Promotion_Application') drop database [Promotion_Application];
+
+CREATE DATABASE [Promotion_Application];
+GO
+USE [Promotion_Application];
+
+-- CREATE table PA_ITEM
+
+IF OBJECT_ID(N'dbo.PA_ITEM', N'U') IS NOT NULL drop table dbo.[PA_ITEM];
+GO
+
+CREATE TABLE dbo.[PA_ITEM](
+ITEM_ID int NOT NULL,
+ITEM_NAME varchar(100) NOT NULL,
+ITEM_DESCRIPTION varchar(1000) NOT NULL,
+
+BRAND_ID int NOT NULL,
+BRAND_NAME varchar(100) NOT NULL,
+
+CATEGORY_ID int NOT NULL,
+CATEGORY_NAME varchar(100) NOT NULL,
+
+PRICE_DATE date, 
+PRICE_VALUE float, 
+
+CONSTRAINT [PK_PA_ITEM_ITEM_ID] PRIMARY KEY (ITEM_ID),
+CONSTRAINT [UC_PA_ITEM_ITEM_NAME] UNIQUE (ITEM_NAME)
+);

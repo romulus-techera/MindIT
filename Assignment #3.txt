@@ -1,0 +1,55 @@
+----------------------------------------------------------------------------------------------
+-- Assignment #3.	Create an ETL that populates the table PA_ITEM ---------------------------
+----------------------------------------------------------------------------------------------
+
+USE master
+Go
+
+Truncate table [Promotion_Application].dbo.PA_ITEM;
+Go
+
+------- Using a common table expression to select the values from the Pricing Application that need to be inserted
+------- based on the criteria -> The date of the last price for the current item\The last price value for the current item
+With
+CurrentItems as( 
+select
+ [ITEM_ID]
+ ,MAX([PRICE_DATE]) as [PRICE_DATE]
+from [Pricing_Application].dbo.PR_PRICE
+group by [ITEM_ID]
+)
+
+INSERT INTO [Promotion_Application].dbo.PA_ITEM
+(ITEM_ID, ITEM_NAME, ITEM_DESCRIPTION, BRAND_ID, BRAND_NAME, CATEGORY_ID, CATEGORY_NAME, PRICE_DATE, PRICE_VALUE)
+
+-------Inner Joins to get the correct additional details for Brands, Categories and Prices
+SELECT 
+a.ITEM_ID
+, a.ITEM_NAME
+, a.ITEM_DESCRIPTION
+, a.BRAND_ID
+, b.BRAND_NAME
+, a.CATEGORY_ID
+, c.CATEGORY_NAME
+, d.PRICE_DATE
+, d.PRICE_VALUE
+
+FROM [Item_Catalogue].[dbo].[IC_ITEM] a
+INNER JOIN
+[Item_Catalogue].[dbo].[IC_BRAND] b
+on a.BRAND_ID = b.BRAND_ID
+
+INNER JOIN
+[Item_Catalogue].[dbo].[IC_CATEGORY] c
+ON a.CATEGORY_ID = c.CATEGORY_ID
+
+INNER JOIN
+[Pricing_Application].[dbo].[PR_PRICE] d
+on a.ITEM_ID = d.ITEM_ID
+
+--- Makes sure we only get the latest/most recent set of Price Date/Price Value
+INNER JOIN
+CurrentItems e
+on a.ITEM_ID = e.ITEM_ID
+and
+d.PRICE_DATE = e.[PRICE_DATE]

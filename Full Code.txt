@@ -1,0 +1,290 @@
+-------------Assignment #1 Creating the databases
+-------------------------------------------------
+
+USE [master]
+GO
+
+--------------------- Creating the first database
+--------------------- Item_Catalogue
+
+if exists (SELECT name FROM master.sys.databases where name=N'Item_Catalogue') drop database [Item_Catalogue];
+
+CREATE DATABASE [Item_Catalogue];
+
+GO
+USE [Item_Catalogue];
+GO
+-- CREATE #1 table IC_CATEGORY in the database
+
+IF OBJECT_ID(N'dbo.IC_CATEGORY', N'U') IS NOT NULL drop table dbo.[IC_CATEGORY];
+GO
+
+CREATE TABLE dbo.[IC_CATEGORY](
+	CATEGORY_ID int NOT NULL,
+	CATEGORY_NAME varchar (100) NOT NULL, 
+	CATEGORY_DESC varchar (1000) NULL, 
+
+    CONSTRAINT [PK_IC_CATEGORY_ITEM_ID] PRIMARY KEY (CATEGORY_ID),
+	CONSTRAINT [UC_IC_CATEGORY_ITEM_NAME] UNIQUE (CATEGORY_NAME)
+	);
+
+-- CREATE #2 table IC_BRAND 
+
+IF OBJECT_ID(N'dbo.IC_BRAND', N'U') IS NOT NULL drop table dbo.[IC_BRAND];
+GO
+
+CREATE TABLE dbo.[IC_BRAND](
+BRAND_ID int NOT NULL,
+BRAND_NAME varchar (100) NOT NULL, 
+BRAND_DESC varchar (1000) NULL, 
+
+CONSTRAINT [PK_IC_BRAND_ITEM_ID] PRIMARY KEY (BRAND_ID),
+CONSTRAINT [UC_IC_BRAND_ITEM_NAME] UNIQUE (BRAND_NAME)
+);
+
+-- CREATE #3 table IC_ITEM
+
+IF OBJECT_ID(N'dbo.IC_ITEM', N'U') IS NOT NULL drop table dbo.[IC_ITEM];
+GO
+
+CREATE TABLE dbo.[IC_ITEM](
+ITEM_ID int NOT NULL,
+ITEM_NAME varchar (100) NOT NULL, 
+ITEM_DESCRIPTION varchar (1000) NULL, 
+
+BRAND_ID int NOT NULL,
+CATEGORY_ID int NOT NULL, 
+
+CONSTRAINT [PK_IC_ITEM_ITEM_ID] PRIMARY KEY (ITEM_ID),
+CONSTRAINT [UC_IC_ITEM_ITEM_NAME] UNIQUE (ITEM_NAME)
+);
+
+
+
+--------------------- Creating the second database
+--------------------- Pricing_Application
+USE [master]
+GO
+
+if exists (SELECT name FROM master.sys.databases where name=N'Pricing_Application') drop database [Pricing_Application];
+
+CREATE DATABASE [Pricing_Application];
+
+GO
+USE [Pricing_Application];
+
+-- CREATE #1 table PR_PRICE
+
+IF OBJECT_ID(N'dbo.PR_PRICE', N'U') IS NOT NULL drop table dbo.[PR_PRICE];
+GO
+
+CREATE TABLE dbo.[PR_PRICE](
+ITEM_ID int NOT NULL,
+PRICE_DATE date NOT NULL, 
+PRICE_VALUE float NOT NULL, 
+
+CONSTRAINT [PK_PR_PRICE_ITEM_ID_PRICE_DATE] PRIMARY KEY (ITEM_ID,PRICE_DATE)
+);
+
+
+--------------------- Creating the third database
+--------------------- Promotion_Application
+USE [master]
+GO
+
+if exists (SELECT name FROM master.sys.databases where name=N'Promotion_Application') drop database [Promotion_Application];
+
+CREATE DATABASE [Promotion_Application];
+GO
+USE [Promotion_Application];
+
+-- CREATE table PA_ITEM
+
+IF OBJECT_ID(N'dbo.PA_ITEM', N'U') IS NOT NULL drop table dbo.[PA_ITEM];
+GO
+
+CREATE TABLE dbo.[PA_ITEM](
+ITEM_ID int NOT NULL,
+ITEM_NAME varchar(100) NOT NULL,
+ITEM_DESCRIPTION varchar(1000) NOT NULL,
+
+BRAND_ID int NOT NULL,
+BRAND_NAME varchar(100) NOT NULL,
+
+CATEGORY_ID int NOT NULL,
+CATEGORY_NAME varchar(100) NOT NULL,
+
+PRICE_DATE date, 
+PRICE_VALUE float, 
+
+CONSTRAINT [PK_PA_ITEM_ITEM_ID] PRIMARY KEY (ITEM_ID),
+CONSTRAINT [UC_PA_ITEM_ITEM_NAME] UNIQUE (ITEM_NAME)
+);
+
+
+-------------------------------------------------
+-------------Assignment #2 Populating the tables
+-------------------------------------------------
+
+--IC_CATEGORY: 5 entries
+--Hard coded: small volume allows it, and this way the values are closer to real values
+USE [Item_Catalogue]
+GO
+TRUNCATE TABLE dbo.IC_CATEGORY;
+GO
+
+INSERT INTO dbo.IC_CATEGORY
+(CATEGORY_ID, CATEGORY_NAME, CATEGORY_DESC)
+VALUES
+(1,'Food','Meat, dairy, greens, fruits'),
+(2,'Drinks','Coke, beer, wine, wiskey, vodka, orange juice'),
+(3,'Perfumes','Fragrances for men and women'),
+(4,'Sports','Shoes for different sports like tennis, basketball, running'),
+(5,'Fashion_Accesories','Bags, purses');
+
+
+--IC_BRAND: 10 entries
+--Hard coded: small volume allows it, and this way the values are closer to real values
+
+TRUNCATE TABLE dbo.IC_BRAND;
+GO
+
+INSERT INTO dbo.IC_BRAND
+(BRAND_ID, BRAND_NAME, BRAND_DESC)
+VALUES
+(1,'Cris Tim','Cold meats, salamis and sausages'),
+(2,'Prod Lacta','Milk, yogurt, and cheese'),
+(3,'Shay&Blue','Brittish fragrances for him and her'),
+(4,'Paco Rabanne','Best selling frangrances for men and women'),
+(5,'Coca Cola Company','Soft drinks: sodas, juices and water.'),
+(6,'Johnny Walker','Blended scotch wiskey'),
+(7,'Nike','Authentic athletic performance'),
+(8,'Brandblack','Look great winning'),
+(9,'Prada','Get your knock off cheaper in New York'),
+(10,'Louis Vuitton','For people with more money than common sense');
+
+
+--IC_BRAND: 10,000 entries
+--Generated: volume necessary doesn't allow it
+
+TRUNCATE TABLE dbo.IC_ITEM;
+GO
+
+-----------------------------------------------------------------------------------------
+-------Used a generator for 200 elements * 5 categories * 10 brands => 10K lines of insert
+-------Using Cross Joins for speed
+-------Coupled with a common table expression for readibility
+-------this would also allow scalability by adding new layers of generators to increase the total # entries generated
+-----------------------------------------------------------------------------------------
+With  
+Generator0 as (Select gen_col FROM (Values ('0'),('1'),('2'),('3')) AS s0 (gen_col)),  ----4
+Generator1 as (Select Concat(s1.gen_col,s2.gen_col) as gen_col from Generator0 s1 CROSS JOIN Generator0 s2),  -- 4 x 4 = 16
+Generator2 as (Select Concat(s1.gen_col,s2.gen_col) as gen_col from Generator1 s1 CROSS JOIN Generator1 s2    -- 16 x 16 = 256
+)
+
+INSERT INTO dbo.IC_ITEM
+(ITEM_ID, ITEM_NAME, ITEM_DESCRIPTION, BRAND_ID, CATEGORY_ID)
+--VALUES
+
+select top(10000)
+Concat(a.gen_col,BRAND_ID,CATEGORY_ID)
+,LEFT('Item ' + a.gen_col + ' ' + b.Brand_Name + '. ' + c.CATEGORY_NAME ,100)
+,LEFT('Desc ' + a.gen_col + ' ' + b.BRAND_DESC + '. ' + c.CATEGORY_DESC ,1000)
+,BRAND_ID
+,CATEGORY_ID
+from Generator2 a
+CROSS JOIN
+dbo.IC_BRAND b
+CROSS JOIN
+dbo.IC_CATEGORY c;
+
+
+--PR_PRICE: 100,000 entries
+--Generated--Generated: volume necessary doesn't allow it
+USE master
+GO
+TRUNCATE TABLE [Pricing_Application].dbo.PR_PRICE;
+GO
+
+-----------------------------------------------------------------------------------------
+-------Used a generator for 16 distinct dates/prices * 10k items => >100K lines for insert
+-------Using Cross Joins for speed
+-------Coupled with a common table expression for readibility
+-------this would also allow scalability by adding new layers of generators to increase the total # entries generated
+-----------------------------------------------------------------------------------------
+With  
+Generator0 as (Select gen_col FROM (Values (1),(2),(3),(4)) AS s0 (gen_col)),  ----4
+Generator1 as (Select Concat(s1.gen_col,s2.gen_col) as gen_col from Generator0 s1 CROSS JOIN Generator0 s2),  -- 4 x 4 = 16
+GeneratorDates as (Select CONVERT(date,DATEADD(dd,CONVERT(int, gen_col), GETDATE())) AS [PRICE_DATE] from Generator1
+)
+
+INSERT INTO [Pricing_Application].dbo.PR_PRICE
+(ITEM_ID, PRICE_DATE, PRICE_VALUE)
+
+select top(100000) -- respecting the price 100k instruction
+a.ITEM_ID
+,b.[PRICE_DATE]
+,Convert(float,Concat(a.ITEM_ID,a.BRAND_ID,a.CATEGORY_ID))
+
+from Item_Catalogue.dbo.IC_ITEM a
+CROSS JOIN
+GeneratorDates b;
+
+
+
+
+----------------------------------------------------------------------------------------------
+-- Assignment #3.	Create an ETL that populates the table PA_ITEM ---------------------------
+----------------------------------------------------------------------------------------------
+
+USE master
+Go
+
+Truncate table [Promotion_Application].dbo.PA_ITEM;
+Go
+
+------- Using a common table expression to select the values from the Pricing Application that need to be inserted
+------- based on the criteria -> The date of the last price for the current item\The last price value for the current item
+With
+CurrentItems as( 
+select
+ [ITEM_ID]
+ ,MAX([PRICE_DATE]) as [PRICE_DATE]
+from [Pricing_Application].dbo.PR_PRICE
+group by [ITEM_ID]
+)
+
+INSERT INTO [Promotion_Application].dbo.PA_ITEM
+(ITEM_ID, ITEM_NAME, ITEM_DESCRIPTION, BRAND_ID, BRAND_NAME, CATEGORY_ID, CATEGORY_NAME, PRICE_DATE, PRICE_VALUE)
+
+-------Inner Joins to get the correct additional details for Brands, Categories and Prices
+SELECT 
+a.ITEM_ID
+, a.ITEM_NAME
+, a.ITEM_DESCRIPTION
+, a.BRAND_ID
+, b.BRAND_NAME
+, a.CATEGORY_ID
+, c.CATEGORY_NAME
+, d.PRICE_DATE
+, d.PRICE_VALUE
+
+FROM [Item_Catalogue].[dbo].[IC_ITEM] a
+INNER JOIN
+[Item_Catalogue].[dbo].[IC_BRAND] b
+on a.BRAND_ID = b.BRAND_ID
+
+INNER JOIN
+[Item_Catalogue].[dbo].[IC_CATEGORY] c
+ON a.CATEGORY_ID = c.CATEGORY_ID
+
+INNER JOIN
+[Pricing_Application].[dbo].[PR_PRICE] d
+on a.ITEM_ID = d.ITEM_ID
+
+--- Makes sure we only get the latest/most recent set of Price Date/Price Value
+INNER JOIN
+CurrentItems e
+on a.ITEM_ID = e.ITEM_ID
+and
+d.PRICE_DATE = e.[PRICE_DATE]
