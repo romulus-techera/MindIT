@@ -1,0 +1,2 @@
+# MindIT
+interview assignments
